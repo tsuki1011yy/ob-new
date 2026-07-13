@@ -22,6 +22,7 @@ COPY scripts ./scripts
 COPY dashboard.html .
 COPY dashboard_assets ./dashboard_assets
 COPY config.example.yaml ./config.yaml
+COPY start_all.sh .
 RUN chmod +x scripts/*.sh
 
 # Persistent mount point: bucket data
