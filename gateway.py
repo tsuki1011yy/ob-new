@@ -3092,6 +3092,20 @@ class GatewayService:
         route = self._resolve_upstream_for_model(model)
         upstream = route["upstream"]
         strategy = str(upstream.get("prompt_cache") or "").strip().lower()
+        if strategy in {"anthropic", "anthropic_explicit", "anthropic-explicit", "anthropic_block", "anthropic-block"}:
+            # OpenRouter sticky routing: a stable session_id keeps requests on the
+            # same provider endpoint so Anthropic cache reads actually hit.
+            if session_id:
+                payload.setdefault("session_id", str(session_id)[:256])
+            provider_only = str(upstream.get("provider_only") or "").strip()
+            if not provider_only and "openrouter.ai" in str(upstream.get("base_url") or "").lower():
+                provider_only = "anthropic"
+            if provider_only and provider_only.lower() != "none":
+                payload.setdefault(
+                    "provider",
+                    {"only": [item.strip() for item in provider_only.split(",") if item.strip()]},
+                )
+            return
         if strategy != "openai":
             return
 
@@ -5150,6 +5164,11 @@ class GatewayService:
             "messages": [],
             "max_tokens": self._anthropic_max_tokens(payload),
         }
+        # OpenRouter extensions: keep sticky-routing fields if upstream hints set them.
+        if payload.get("session_id"):
+            upstream_payload["session_id"] = payload["session_id"]
+        if isinstance(payload.get("provider"), dict):
+            upstream_payload["provider"] = payload["provider"]
 
         system_parts: list[str] = []
         for message in payload.get("messages", []):
@@ -16529,6 +16548,7 @@ class GatewayService:
                         "anthropic_version": anthropic_version,
                         "anthropic_beta": anthropic_beta,
                         "auth_style": str(raw.get("auth_style") or "").strip().lower(),
+                        "provider_only": str(raw.get("provider_only") or "").strip(),
                     }
                 )
             if upstreams:
