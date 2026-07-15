@@ -5120,10 +5120,21 @@ class GatewayService:
             beta = str(request.headers.get("anthropic-beta") or "").strip()
 
         headers = {
-            "x-api-key": key_entry["value"],
             "anthropic-version": version,
             "Content-Type": "application/json",
         }
+        auth_style = str(upstream.get("auth_style") or "").strip().lower()
+        if not auth_style:
+            # Auto-detect: OpenRouter's Anthropic-compatible /messages endpoint
+            # only accepts Authorization: Bearer, not x-api-key.
+            base_url = str(upstream.get("base_url") or "").lower()
+            key_value = str(key_entry.get("value") or "")
+            if "openrouter.ai" in base_url or key_value.startswith("sk-or-"):
+                auth_style = "bearer"
+        if auth_style in {"bearer", "authorization"}:
+            headers["Authorization"] = f"Bearer {key_entry['value']}"
+        else:
+            headers["x-api-key"] = key_entry["value"]
         if beta:
             headers["anthropic-beta"] = beta
         return headers
@@ -16517,6 +16528,7 @@ class GatewayService:
                         "prompt_cache_retention": prompt_cache_retention,
                         "anthropic_version": anthropic_version,
                         "anthropic_beta": anthropic_beta,
+                        "auth_style": str(raw.get("auth_style") or "").strip().lower(),
                     }
                 )
             if upstreams:
