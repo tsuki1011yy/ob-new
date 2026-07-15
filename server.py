@@ -369,6 +369,7 @@ def _dashboard_sanitize_gateway_upstreams(raw_upstreams, existing_upstreams=None
             "anthropic_version",
             "anthropic_beta",
             "auth_style",
+            "provider_only",
         ):
             value = str(raw.get(key) or "").strip()
             if value:
@@ -381,8 +382,9 @@ def _dashboard_sanitize_gateway_upstreams(raw_upstreams, existing_upstreams=None
         for secret_key in ("api_key", "api_keys"):
             if isinstance(existing, dict) and secret_key in existing:
                 sanitized[secret_key] = existing[secret_key]
-        if "auth_style" not in sanitized and isinstance(existing, dict) and existing.get("auth_style"):
-            sanitized["auth_style"] = existing["auth_style"]
+        for sticky_key in ("auth_style", "provider_only"):
+            if sticky_key not in sanitized and isinstance(existing, dict) and existing.get(sticky_key):
+                sanitized[sticky_key] = existing[sticky_key]
         upstreams.append(sanitized)
     return upstreams
 
