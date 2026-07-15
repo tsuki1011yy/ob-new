@@ -1,0 +1,21 @@
+# Ombre 正式配置 —— 随代码一起部署,重启/重部署不丢
+# 真实 key 全部在 Zeabur 环境变量里,这里只有变量名,可安全入仓
+
+gateway:
+  upstreams:
+    - name: "deepseek"
+      protocol: "openai"
+      base_url: "https://api.deepseek.com/v1"
+      api_key_env: "OMBRE_GATEWAY_UPSTREAM_API_KEY"
+      models:
+        - "deepseek-v4-pro"
+        - "deepseek-v4-flash"
+
+    - name: "Claude"
+      protocol: "anthropic"
+      base_url: "https://openrouter.ai/api/v1"
+      api_key_env: "OMBRE_GATEWAY_OPENROUTER_API_KEY"
+      prompt_cache: "anthropic_explicit"
+      prompt_cache_retention: "1h"
+      models:
+        - "anthropic/claude-opus-4.6"
